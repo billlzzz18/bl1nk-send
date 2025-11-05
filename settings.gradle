@@ -1,0 +1,2 @@
+rootProject.name = "bl1nk-send"
+include(":app")
