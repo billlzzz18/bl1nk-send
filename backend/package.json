@@ -1,0 +1,7 @@
+{
+  "name": "blink-backend",        
+  "version": "1.0.0",
+  "description": "Webhook handler service for Blink",
+  "main": "src/receiver.js",      
+  "dependencies": {}
+}
