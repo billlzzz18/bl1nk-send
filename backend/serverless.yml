@@ -1,17 +1,20 @@
 service: blink-webhook-strict
 frameworkVersion: '3'
+
 provider:
   name: aws
-  runtime: nodejs20.x
+  runtime: nodejs20.x  # ใช้ Node 20 ตามมาตรฐานใหม่
   region: ap-southeast-1
+  timeout: 30          # เพิ่มเวลาให้ Lambda ทำงานได้นานสุด 30 วินาที (กัน AI ตอบช้า)
+  memorySize: 256      # ลด Ram เหลือ 256MB ก็พอ (ประหยัดตังค์)
   environment:
-    # รับค่าจากที่ GitHub Actions ส่งมา
-    WEBHOOK_SECRET: ${env:WEBHOOK_SECRET} 
+    # Provided by GitHub Actions during deployment (แก้คอมเมนต์เป็น Eng ตามใจบอท)
+    WEBHOOK_SECRET: ${env:WEBHOOK_SECRET}
+
 functions:
   webhookReceiver:
     handler: src/receiver.handler
     events:
-      - http:
-          path: webhook
+      - httpApi:          # เปลี่ยนเป็น httpApi (ของใหม่ ถูกและแรง)
+          path: /webhook  # ต้องมี / นำหน้า
           method: post
-          cors: true
