@@ -4,30 +4,31 @@ on:
   push:
     branches:
       - main
-    paths:  # <--- เพิ่มตรงนี้!
-      - 'backend/**'  # ทำงานเฉพาะเมื่อไฟล์ใน backend เปลี่ยน
+    paths:
+      - 'backend/**'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./backend # <--- บอกให้เข้าไปรันคำสั่งในโฟลเดอร์ backend
-    
+        working-directory: ./backend
+
     steps:
       - uses: actions/checkout@v3
+
       - uses: actions/setup-node@v3
         with:
-          node-version: 18.x
-      
+          node-version: 20.x
+
       - name: Install Serverless & Deps
         run: |
-          npm install -g serverless
+          npm install -g serverless@3  # <--- แก้จุดที่ 1: บังคับใช้ V3
           npm install
-      
+
       - name: Serverless Deploy
         run: serverless deploy
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}S_ACCESS_KEY_ID }}
+          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }} # <--- แก้จุดที่ 2: ลบขยะที่ติดมาออก
