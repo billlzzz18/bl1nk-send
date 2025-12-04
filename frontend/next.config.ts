@@ -1,13 +1,12 @@
-import { withWorkflow } from "workflow/next";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   typescript: {
-    ignoreBuildErrors: true, // กันเหนียว เผื่อ Type ตีกัน
+    ignoreBuildErrors: true,
   },
   eslint: {
-    ignoreDuringBuilds: true, // กันเหนียว
+    ignoreDuringBuilds: true,
   }
 };
 
-export default withWorkflow(nextConfig);
+export default nextConfig;
