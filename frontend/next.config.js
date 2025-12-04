@@ -1,4 +1,5 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {}
+import { withWorkflow } from "workflow/next";
+import type { NextConfig } from "next";
 
-module.exports = nextConfig
+const nextConfig: NextConfig = { /* config เดิม */ };
+export default withWorkflow(nextConfig);
