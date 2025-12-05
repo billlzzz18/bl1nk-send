@@ -1,69 +1,89 @@
-import { UserButton, auth } from "@clerk/nextjs";
-import { sql } from "@/lib/db";
+import { auth } from '@clerk/nextjs/server';
+import { sql } from '@/lib/db';
+import { UserButton } from '@clerk/nextjs';
 
-// บังคับให้หน้านี้ไม่ Cache (ข้อมูลเปลี่ยนตลอดเวลา)
+// บังคับให้โหลดข้อมูลใหม่ทุกครั้ง (ไม่ Cache)
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
-  const { userId } = auth();
-  if (!userId) return <div>Access Denied</div>;
+  // 1. ตรวจสอบสิทธิ์ (Server-side Auth)
+  const { userId } = await auth();
+  if (!userId) return <div className="p-10">Access Denied: Please Login</div>;
 
-  // 1. ดึงข้อมูล 10 รายการล่าสุดจาก Neon
-  // (สมมติว่าคุณสร้างตาราง webhook_inbound ตามที่คุยกันรอบก่อนแล้ว)
-  let logs = [];
+  // 2. ดึงข้อมูลจาก Neon (SQL Query)
+  // หมายเหตุ: ตรวจสอบว่าใน Neon คุณสร้างตาราง 'webhook_inbound' หรือยัง
+  // ถ้ายังไม่มีตาราง มันจะ Error ว่า relation does not exist
+  let logs: any[] = [];
   try {
     logs = await sql`
-      SELECT id, provider, payload, created_at 
-      FROM webhook_inbound 
+      SELECT * FROM webhook_inbound 
       ORDER BY created_at DESC 
       LIMIT 10
     `;
-  } catch (e) {
-    console.error("DB Error:", e);
-    // กรณีตารางยังไม่ถูกสร้าง หรือต่อผิด
+  } catch (error) {
+    console.error("Database Error:", error);
+    // กรณีนี้มักเกิดจากยังไม่ได้สร้างตาราง หรือ Connection String ผิด
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="flex justify-between items-center mb-8 bg-white p-4 rounded-lg shadow-sm">
-        <h1 className="text-2xl font-bold">Webhook Monitor</h1>
-        <UserButton afterSignOutUrl="/" />
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <nav className="bg-white border-b px-6 py-4 flex justify-between items-center">
+        <h1 className="text-xl font-bold text-gray-800">Blink Dashboard</h1>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-gray-500">Admin Mode</span>
+          <UserButton afterSignOutUrl="/" />
+        </div>
+      </nav>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payload Preview</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {logs.length === 0 ? (
+      {/* Main Content */}
+      <main className="p-6 max-w-7xl mx-auto">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Recent Webhooks</h2>
+          <p className="text-gray-500">Monitoring real-time data from Android Tunnel</p>
+        </div>
+
+        <div className="bg-white shadow rounded-lg overflow-hidden border">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
               <tr>
-                <td colSpan={3} className="px-6 py-4 text-center text-gray-500">
-                  No webhooks received yet (or DB connection failed)
-                </td>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Provider</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payload</th>
               </tr>
-            ) : (
-              logs.map((log: any) => (
-                <tr key={log.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(log.created_at).toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                    {log.provider}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500 font-mono">
-                    {JSON.stringify(log.payload).substring(0, 50)}...
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {logs.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-6 py-10 text-center text-gray-500">
+                    {logs === null ? 'Database Connection Failed' : 'No logs found yet.'}
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : (
+                logs.map((log) => (
+                  <tr key={log.id}>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {new Date(log.created_at).toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 text-sm font-medium text-blue-600">
+                      {log.provider || 'unknown'}
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                        {log.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500 font-mono max-w-xs truncate">
+                      {JSON.stringify(log.payload)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </main>
     </div>
   );
 }
