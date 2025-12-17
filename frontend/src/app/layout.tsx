@@ -1,17 +1,14 @@
 import type { Metadata } from 'next'
-import {
-  ClerkProvider,
-  SignInButton,
-  SignUpButton,
-  SignedIn,
-  SignedOut,
-  UserButton,
-} from '@clerk/nextjs'
+import { ClerkProvider } from '@clerk/nextjs'
 import './globals.css'
+import { Inter } from 'next/font/google'
+
+// ใช้ Font Inter (มาตรฐาน Modern UI)
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Blink Dashboard',
-  description: 'Enterprise Webhook Manager',
+  title: 'bl1nk console',
+  description: 'Enterprise Webhook Management',
 }
 
 export default function RootLayout({
@@ -22,25 +19,10 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body>
-          <header className="flex justify-end items-center p-4 gap-4 h-16 border-b bg-white">
-            <SignedOut>
-              <SignInButton />
-              <SignUpButton>
-                <button className="bg-blue-600 text-white rounded-full font-medium text-sm px-4 py-2 hover:bg-blue-700 transition">
-                  Sign Up
-                </button>
-              </SignUpButton>
-            </SignedOut>
-            <SignedIn>
-              <UserButton />
-            </SignedIn>
-          </header>
-          <main>
-            {children}
-          </main>
+        <body className={inter.className}>
+          {children}
         </body>
       </html>
     </ClerkProvider>
   )
-}
+}}
